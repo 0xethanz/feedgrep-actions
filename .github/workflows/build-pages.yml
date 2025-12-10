@@ -1,0 +1,75 @@
+name: 🌐 Build & Deploy GitHub Pages
+
+on:
+  # 由RSS处理工作流触发
+  workflow_dispatch:
+  
+  # 也可以在提交代码时手动构建
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-pages.yml'
+      - 'build_static_pages.py'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 🐍 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: 📦 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml
+      
+      - name: 🔨 构建静态页面
+        run: |
+          python build_static_pages.py \
+            --token ${{ secrets.GH_TOKEN }} \
+            --owner ${{ github.repository_owner }} \
+            --repo ${{ github.event.repository.name }} \
+            --output docs
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      
+      - name: 📄 复制前端文件
+        run: |
+          # 复制修改过的index.html到docs目录
+          cp index.html docs/index.html 2>/dev/null || true
+          
+          # 创建.nojekyll文件以禁用Jekyll处理
+          touch docs/.nojekyll
+      
+      - name: 🚀 发布到GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+      
+      - name: 🌐 部署GitHub Pages
+        uses: actions/deploy-pages@v4
+      
+      - name: ✅ 生成部署摘要
+        run: |
+          echo "## 📄 Pages部署完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 访问地址" >> $GITHUB_STEP_SUMMARY
+          echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 API端点" >> $GITHUB_STEP_SUMMARY
+          echo "- Feeds: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/api/feeds.json" >> $GITHUB_STEP_SUMMARY
+          echo "- Categories: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/api/categories.json" >> $GITHUB_STEP_SUMMARY
+          echo "- Items: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/api/items.json" >> $GITHUB_STEP_SUMMARY
