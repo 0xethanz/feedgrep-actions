@@ -1,9 +1,9 @@
 name: 📡 FeedGrep RSS Feed Processing
 
 on:
-  schedule:
-    # 每天 UTC 时间 02:00 运行 (北京时间 10:00)
-    - cron: '0 2 * * *'
+  # schedule:
+  #   # 每天 UTC 时间 02:00 运行 (北京时间 10:00)
+  #   - cron: '0 2 * * *'
   
   # 允许手动触发
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
   # 在提交到main分支时也运行
   push:
     branches:
-      - main
+      - main-1
     paths:
       - 'feedgrep.yaml'
       - '.github/workflows/rss-feed.yml'
