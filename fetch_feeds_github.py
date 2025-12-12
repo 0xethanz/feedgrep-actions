@@ -128,12 +128,21 @@ _自动创建于 {datetime.now().isoformat()}_
         try:
             # 根据配置决定是否检查已关闭的issues
             state = "all" if self.check_closed else "open"
-            url = f"{self.base_url}/issues?q=title:{quote(title)}&state={state}"
+            # 使用正确的搜索API端点
+            search_query = f"{quote(title)} in:title repo:{self.owner}/{self.repo} is:issue"
+            if state == "open":
+                search_query += " is:open"
+            
+            url = f"https://api.github.com/search/issues?q={search_query}"
             response = requests.get(url, headers=self.headers, timeout=10)
             
             if response.status_code == 200:
-                issues = response.json()
-                return len(issues) > 0
+                result = response.json()
+                # 检查是否有完全匹配标题的issue
+                for issue in result.get('items', []):
+                    if issue.get('title', '').strip() == title.strip():
+                        return True
+                return False
             return False
                 
         except Exception as e:

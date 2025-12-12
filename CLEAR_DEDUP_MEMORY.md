@@ -59,8 +59,8 @@ python fetch_feeds_github.py \
 如果你安装了GitHub CLI (gh)：
 
 ```bash
-# 获取所有rss-item标签的issue编号
-gh issue list --label rss-item --state all --json number --jq '.[].number' | \
+# 获取所有打开的rss-item标签的issue编号并关闭
+gh issue list --label rss-item --state open --json number --jq '.[].number' | \
 while read issue_number; do
   gh issue close $issue_number
 done
