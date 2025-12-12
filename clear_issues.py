@@ -78,11 +78,12 @@ class IssuesCleaner:
         删除一个Issue（注意：GitHub API不支持直接删除Issue）
         只能关闭Issue，然后添加"deleted"标签
         """
+        # 先关闭Issue
+        issue_closed = self.close_issue(issue_number)
+        if not issue_closed:
+            return False
+        
         try:
-            # 先关闭Issue
-            if not self.close_issue(issue_number):
-                return False
-            
             # 添加"deleted"标签（使用正确的格式）
             url = f"{self.base_url}/issues/{issue_number}/labels"
             # 注意：这里会创建标签如果它不存在
@@ -96,9 +97,9 @@ class IssuesCleaner:
                 return True
                 
         except Exception as e:
-            print(f"❌ 处理Issue #{issue_number}时出错: {e}")
-            # 如果Issue已经关闭，即使添加标签失败也认为成功
-            return False
+            print(f"⚠️  添加标签时出错: {e}")
+            # Issue已经关闭，即使添加标签失败也认为操作成功
+            return True
 
 
 def main():
