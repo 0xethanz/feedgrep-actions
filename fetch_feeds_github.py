@@ -18,10 +18,11 @@ from urllib.parse import quote
 class GitHubIssuesDataStore:
     """使用GitHub Issues作为数据存储的实现"""
     
-    def __init__(self, token: str, owner: str, repo: str):
+    def __init__(self, token: str, owner: str, repo: str, check_closed: bool = True):
         self.token = token
         self.owner = owner
         self.repo = repo
+        self.check_closed = check_closed  # 是否在去重时检查已关闭的issues
         self.base_url = f"https://api.github.com/repos/{owner}/{repo}"
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
@@ -125,7 +126,9 @@ _自动创建于 {datetime.now().isoformat()}_
     def check_item_exists(self, title: str) -> bool:
         """检查该标题的Issue是否已存在"""
         try:
-            url = f"{self.base_url}/issues?q=title:{quote(title)}&state=all"
+            # 根据配置决定是否检查已关闭的issues
+            state = "all" if self.check_closed else "open"
+            url = f"{self.base_url}/issues?q=title:{quote(title)}&state={state}"
             response = requests.get(url, headers=self.headers, timeout=10)
             
             if response.status_code == 200:
@@ -141,12 +144,12 @@ _自动创建于 {datetime.now().isoformat()}_
 class FeedGrepGitHubActions:
     """GitHub Actions环境下的FeedGrep处理器"""
     
-    def __init__(self, config_path: str, token: str, owner: str, repo: str):
+    def __init__(self, config_path: str, token: str, owner: str, repo: str, check_closed: bool = True):
         """初始化处理器"""
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
         
-        self.store = GitHubIssuesDataStore(token, owner, repo)
+        self.store = GitHubIssuesDataStore(token, owner, repo, check_closed)
         self.processed_items = 0
         self.skipped_items = 0
     
@@ -218,6 +221,8 @@ def main():
     parser.add_argument('--token', required=True, help='GitHub访问令牌')
     parser.add_argument('--owner', required=True, help='仓库所有者')
     parser.add_argument('--repo', required=True, help='仓库名称')
+    parser.add_argument('--ignore-closed', action='store_true', 
+                       help='去重时忽略已关闭的Issues（用于清空去重记忆后重新处理）')
     
     args = parser.parse_args()
     
@@ -231,7 +236,8 @@ def main():
         args.config,
         args.token,
         args.owner,
-        args.repo
+        args.repo,
+        check_closed=not args.ignore_closed
     )
     
     processor.process_all_feeds()
