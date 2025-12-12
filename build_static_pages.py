@@ -260,16 +260,16 @@ def main():
     print("⏳ 从GitHub读取数据...")
     issues = reader.get_all_issues()
     
-    if not issues:
-        print("❌ 没有找到任何Issues")
-        return
-    
-    # 转换数据
-    items = [reader.parse_issue_to_item(issue) for issue in issues]
-    print(f"✅ 读取了 {len(items)} 条内容")
-    
-    # 生成静态页面
+    # 生成静态页面（即使没有issues也要创建目录结构）
     builder = StaticPageBuilder(args.output)
+    
+    if not issues:
+        print("⚠️  没有找到任何Issues，将生成空的静态页面")
+        items = []
+    else:
+        # 转换数据
+        items = [reader.parse_issue_to_item(issue) for issue in issues]
+        print(f"✅ 读取了 {len(items)} 条内容")
     
     # 生成JSON数据
     feeds = builder.build_feeds_json(items)
